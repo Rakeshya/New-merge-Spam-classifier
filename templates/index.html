@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPAM DETECTION SYSTEM v2.5.1</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #0a0a0a;
+      color: #00ff00;
+      font-family: 'Share Tech Mono', monospace;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(0, 255, 0, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(0, 255, 0, 0.03) 0%, transparent 20%);
+    }
+
+    .matrix-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.1;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+    }
+
+    .header {
+      text-align: center;
+      padding: 30px 0;
+      border-bottom: 1px solid #00ff00;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .header::before {
+      content: ">";
+      position: absolute;
+      left: 0;
+      top: 35px;
+      animation: blink 1s infinite;
+    }
+
+    .title {
+      font-size: 2.5em;
+      color: #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #00cc00;
+      font-size: 1.1em;
+    }
+
+    .terminal {
+      background-color: #001100;
+      border: 1px solid #00ff00;
+      border-radius: 5px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-label {
+      display: block;
+      margin-bottom: 10px;
+      color: #00cc00;
+    }
+
+    .text-input {
+      width: 100%;
+      background: #002200;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 15px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .text-input:focus {
+      outline: none;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .scan-btn {
+      background: linear-gradient(45deg, #003300, #006600);
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 12px 30px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .scan-btn:hover {
+      background: linear-gradient(45deg, #004400, #008800);
+      box-shadow: 0 0 15px #00ff00;
+      transform: translateY(-2px);
+    }
+
+    .scan-btn:active {
+      transform: translateY(0);
+    }
+
+    .scan-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .results {
+      margin-top: 30px;
+      display: none;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .result-box {
+      background: #001100;
+      border: 1px solid #00ff00;
+      padding: 15px;
+      border-radius: 3px;
+    }
+
+    .result-label {
+      color: #00cc00;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+    }
+
+    .result-value {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    .spam {
+      color: #ff4444;
+      text-shadow: 0 0 10px #ff0000;
+    }
+
+    .ham {
+      color: #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    .probability-bar {
+      width: 100%;
+      height: 20px;
+      background: #002200;
+      border: 1px solid #00ff00;
+      margin-top: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .probability-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff00, #ff4444);
+      transition: width 1s ease-in-out;
+    }
+
+    .scanning {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .scanning-dots {
+      color: #00ff00;
+      font-size: 1.5em;
+    }
+
+    .log {
+      background: #000000;
+      border: 1px solid #00ff00;
+      padding: 15px;
+      height: 150px;
+      overflow-y: auto;
+      font-size: 0.9em;
+      margin-top: 20px;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+      color: #00cc00;
+    }
+
+    .timestamp {
+      color: #008800;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes matrix {
+      0% {
+        transform: translateY(-100%);
+      }
+
+      100% {
+        transform: translateY(100%);
+      }
+    }
+
+    .glitch {
+      position: relative;
+    }
+
+    .glitch::before {
+      content: attr(data-text);
+      position: absolute;
+      left: -2px;
+      text-shadow: 2px 0 #ff00ff;
+      background: #0a0a0a;
+      overflow: hidden;
+      clip: rect(0, 900px, 0, 0);
+      animation: noise-anim 2s infinite linear alternate-reverse;
+    }
+
+    @keyframes noise-anim {
+      0% {
+        clip: rect(61px, 9999px, 99px, 0);
+      }
+
+      5% {
+        clip: rect(33px, 9999px, 58px, 0);
+      }
+
+      10% {
+        clip: rect(95px, 9999px, 5px, 0);
+      }
+
+      15% {
+        clip: rect(85px, 9999px, 96px, 0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="matrix-bg" id="matrixBg"></div>
+
+  <div class="container">
+    <div class="header">
+      <h1 class="title glitch" data-text="SPAM DETECTION SYSTEM v2.5.1">SPAM DETECTION SYSTEM v2.5.1</h1>
+      <div class="subtitle">NEURAL NETWORK ANALYSIS INTERFACE</div>
+    </div>
+
+    <div class="terminal">
+      <div class="input-group">
+        <label class="input-label">INPUT TEXT FOR ANALYSIS:</label>
+        <textarea class="text-input" id="textInput" placeholder="ENTER SUSPICIOUS MESSAGE FOR SCAN..."></textarea>
+      </div>
+
+      <button class="scan-btn" id="scanBtn" onclick="analyzeText()">
+        INITIATE SCAN
+      </button>
+
+      <div class="scanning" id="scanning">
+        <div class="scanning-dots">
+          ANALYZING TEXT PATTERNS<span id="dots">...</span>
+        </div>
+      </div>
+
+      <div class="results" id="results">
+        <h3>SCAN RESULTS:</h3>
+        <div class="result-grid">
+          <div class="result-box">
+            <div class="result-label">CLASSIFICATION:</div>
+            <div class="result-value" id="predictionResult">-</div>
+          </div>
+          <div class="result-box">
+            <div class="result-label">THREAT LEVEL:</div>
+            <div class="result-value" id="probabilityResult">-</div>
+          </div>
+        </div>
+        <div class="probability-bar">
+          <div class="probability-fill" id="probabilityBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <h3>SYSTEM LOG:</h3>
+      <div class="log" id="systemLog">
+        <div class="log-entry"><span class="timestamp">[00:00:00]</span> SYSTEM INITIALIZED</div>
+        <div class="log-entry"><span class="timestamp">[00:00:00]</span> NEURAL NETWORK READY</div>
+        <div class="log-entry"><span class="timestamp">[00:00:00]</span> AWAITING USER INPUT</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Matrix background effect
+    function createMatrix() {
+      const chars = "01010101010101010101ABCDEFGHIJKLMNOPQRSTUVWXYZ$#@%&";
+      const matrixBg = document.getElementById('matrixBg');
+
+      for (let i = 0; i < 50; i++) {
+        const span = document.createElement('span');
+        span.textContent = chars[Math.floor(Math.random() * chars.length)];
+        span.style.position = 'absolute';
+        span.style.left = Math.random() * 100 + '%';
+        span.style.top = '-20px';
+        span.style.animation = `matrix ${Math.random() * 10 + 5}s linear infinite`;
+        span.style.animationDelay = Math.random() * 5 + 's';
+        span.style.opacity = Math.random() * 0.5 + 0.1;
+        matrixBg.appendChild(span);
+      }
+    }
+
+    // Add log entry
+    function addLog(message) {
+      const log = document.getElementById('systemLog');
+      const timestamp = new Date().toTimeString().split(' ')[0];
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // Animate scanning dots
+    function animateDots() {
+      let dots = 0;
+      const dotsElement = document.getElementById('dots');
+      return setInterval(() => {
+        dots = (dots + 1) % 4;
+        dotsElement.textContent = '.'.repeat(dots);
+      }, 500);
+    }
+
+    // Analyze text
+    async function analyzeText() {
+      const textInput = document.getElementById('textInput').value.trim();
+      const scanBtn = document.getElementById('scanBtn');
+      const scanning = document.getElementById('scanning');
+      const results = document.getElementById('results');
+
+      if (!textInput) {
+        addLog("ERROR: NO INPUT DETECTED");
+        return;
+      }
+
+      // Reset UI
+      scanBtn.disabled = true;
+      scanning.style.display = 'block';
+      results.style.display = 'none';
+      addLog(`INITIATING SCAN: ${textInput.substring(0, 30)}${textInput.length > 30 ? '...' : ''}`);
+
+      // Start dots animation
+      const dotsInterval = animateDots();
+
+      try {
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: textInput })
+        });
+
+        const data = await response.json();
+
+        // Stop animation
+        clearInterval(dotsInterval);
+        scanning.style.display = 'none';
+        scanBtn.disabled = false;
+
+        if (response.ok) {
+          // Update results
+          const predictionElement = document.getElementById('predictionResult');
+          const probabilityElement = document.getElementById('probabilityResult');
+          const probabilityBar = document.getElementById('probabilityBar');
+
+          predictionElement.textContent = data.prediction.toUpperCase();
+          predictionElement.className = 'result-value ' + (data.prediction === 'spam' ? 'spam' : 'ham');
+
+          const probability = data.probability_spam || 0.5;
+          probabilityElement.textContent = (probability * 100).toFixed(1) + '%';
+          probabilityBar.style.width = (probability * 100) + '%';
+
+          results.style.display = 'block';
+
+          addLog(`SCAN COMPLETE: ${data.prediction.toUpperCase()} DETECTED (${(probability * 100).toFixed(1)}% confidence)`);
+        } else {
+          addLog(`SCAN FAILED: ${data.error}`);
+        }
+
+      } catch (error) {
+        clearInterval(dotsInterval);
+        scanning.style.display = 'none';
+        scanBtn.disabled = false;
+        addLog(`NETWORK ERROR: ${error.message}`);
+      }
+    }
+
+    // Enter key to submit
+    document.getElementById('textInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        analyzeText();
+      }
+    });
+
+    // Initialize
+    createMatrix();
+    addLog("FRONTEND INTERFACE LOADED");
+
+    // Add some random system messages
+    setTimeout(() => addLog("PATTERN DATABASE SYNCHRONIZED"), 1000);
+    setTimeout(() => addLog("READY FOR TEXT ANALYSIS"), 2000);
+  </script>
+</body>
+
+</html>
